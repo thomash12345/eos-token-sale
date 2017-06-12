@@ -46,6 +46,10 @@ contract EOSSale is DSAuth, DSExec, DSMath, DSNote {
         return dayFor(time());
     }
 
+    function tomorrow() constant returns (uint) {
+       return dayFor( time()+ 12 hours );
+    }
+
     function dayFor(uint timestamp) constant returns (uint) {
         if( timestamp < startTime ) return 0;
         return (sub(timestamp, startTime) / (1 days)) + 1;
@@ -71,10 +75,19 @@ contract EOSSale is DSAuth, DSExec, DSMath, DSNote {
         assert( today() <= numberOfDays );
         assert( dayFor(timestamp) == today() );
 
-        if( limit ) assert( dailyTotals[today()] + msg.value < limit );
+        var amount_today = msg.value / 2;
+        var amount_tomorrow = msg.value  - amount_today;
+        if( today() == numberOfDays || today() == 0 ) {
+           amount_today = msg.value;
+           amount_tomorrow = 0;
+        }
 
-        userBuys[today()][msg.sender] += msg.value;
-        dailyTotals[today()] += msg.value;
+        if( limit ) assert( dailyTotals[today()] + amount_today < limit );
+
+        userBuys[today()][msg.sender]    += amount_today;
+        userBuys[tomorrow()][msg.sender] += amount_tomorrow;
+        dailyTotals[today()]             += amount_today;
+        dailyTotals[tomorrow()]          += amount_tomorrow;
 
         // save msg.sender if buyer hasn't registered already, this loop
         // converts fixed sized sender into dynamic sized bytes
